@@ -95,6 +95,37 @@ func (c *ClickHouseCollector) collect(ch chan<- prometheus.Metric) error {
 		ch <- m
 	}
 
+	var partMetrics []Part
+	err = c.db.Select(&partMetrics, "SELECT database, table, sum(bytes) AS bytes, count() AS parts, sum(rows) AS rows FROM system.parts WHERE active = 1 GROUP BY database, table")
+	if err != nil {
+		return err
+	}
+	for _, part := range partMetrics {
+		bytesVec := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: metricsNamespace,
+			Name:      "table_parts_bytes",
+			Help:      "Table size in bytes",
+		}, []string{"database", "table"}).WithLabelValues(part.Database, part.Table)
+		bytesVec.Set(float64(part.Bytes))
+		bytesVec.Collect(ch)
+
+		countVec := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: metricsNamespace,
+			Name:      "table_parts_count",
+			Help:      "Number of parts of the table",
+		}, []string{"database", "table"}).WithLabelValues(part.Database, part.Table)
+		countVec.Set(float64(part.Parts))
+		countVec.Collect(ch)
+
+		rowVec := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: metricsNamespace,
+			Name:      "table_parts_rows",
+			Help:      "Number of rows in the table",
+		}, []string{"database", "table"}).WithLabelValues(part.Database, part.Table)
+		rowVec.Set(float64(part.Rows))
+		rowVec.Collect(ch)
+	}
+
 	return nil
 }
 
