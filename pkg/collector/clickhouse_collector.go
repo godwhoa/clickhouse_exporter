@@ -5,7 +5,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/log"
+	"github.com/prometheus/common/log"
 )
 
 // Prometheus metrics namespace
@@ -41,7 +41,7 @@ func (c *ClickHouseCollector) Describe(ch chan<- *prometheus.Desc) {
 // Collect fetches the metrics from clickhouse.
 func (c *ClickHouseCollector) Collect(ch chan<- prometheus.Metric) {
 	if err := c.collect(ch); err != nil {
-		log.Printf("failed to collect clickhouse metrics: %s", err)
+		log.Errorf("failed to collect clickhouse metrics: %s", err)
 	}
 }
 
@@ -89,7 +89,7 @@ func (c *ClickHouseCollector) collect(ch chan<- prometheus.Metric) error {
 				[]string{}, nil),
 			prometheus.CounterValue, e.Value)
 		if err != nil {
-			log.Printf("failed to init const metric: %v", err)
+			log.Errorf("failed to init const metric: %v", err)
 			continue
 		}
 		ch <- m
