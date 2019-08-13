@@ -14,9 +14,9 @@ type Event struct {
 
 // Part metrics from ClickHouse
 type Part struct {
-	Database string `db:"database"`
-	Table    string `db:"table"`
-	Bytes    int64  `db:"bytes"`
-	Parts    int64  `db:"parts"`
-	Rows     int64  `db:"rows"`
+	Database  string `db:"database"`
+	Table     string `db:"table"`
+	Partition string `db:"partition"`
+	Active    int64  `db:"active"`
+	Parts     int64  `db:"parts"`
 }
