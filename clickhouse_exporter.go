@@ -54,7 +54,7 @@ func main() {
 
 	e.GET("/_ah/health", h.HealthCheck)
 
-	addr := fmt.Sprintf("[::]:%d", cfg.TelemetryPort)
+	addr := fmt.Sprintf("%s:%d", cfg.TelemetryAddr, cfg.TelemetryPort)
 
 	e.Logger.Fatal(e.Start(addr))
 }
