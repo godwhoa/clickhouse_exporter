@@ -8,7 +8,7 @@ type configKey struct{}
 
 // Config
 type Config struct {
-	Debug             bool
+	Debug             bool   `envconfig:"DEBUG" default:"false"`
 	TelemetryAddr     string `envconfig:"TELEMETRY_ADDR" default:"127.0.0.1"`
 	TelemetryPort     int    `envconfig:"TELEMETRY_PORT" default:"9116"`
 	TelemetryEndpoint string `envconfig:"TELEMETRY_ENDPOINT" default:"/metrics"`
