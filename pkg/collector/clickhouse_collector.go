@@ -120,6 +120,82 @@ func (c *ClickHouseCollector) collect(ch chan<- prometheus.Metric) error {
 		}
 	}
 
+	var replicaMetrics []Replica
+	err = c.db.Select(&replicaMetrics, `
+	SELECT 
+		database, 
+		table,
+		is_readonly, 
+		future_parts, 
+		parts_to_check, 
+		inserts_in_queue,
+		merges_in_queue, 
+		total_replicas, 
+		active_replicas
+	FROM system.replicas
+	`)
+	if err != nil {
+		return err
+	}
+
+	for _, replica := range replicaMetrics {
+		isReadOnly := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: metricsNamespace,
+			Name:      "replica_readonly",
+			Help:      "Readonly only status of a replica",
+		}, []string{"database", "table"}).WithLabelValues(replica.Database, replica.Table)
+		isReadOnly.Set(float64(replica.ReadOnly))
+		isReadOnly.Collect(ch)
+
+		futureParts := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: metricsNamespace,
+			Name:      "replica_future_parts",
+			Help:      "The number of data parts that will appear as the result of INSERTs or merges that haven't been done yet",
+		}, []string{"database", "table"}).WithLabelValues(replica.Database, replica.Table)
+		futureParts.Set(float64(replica.FutureParts))
+		futureParts.Collect(ch)
+
+		checkParts := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: metricsNamespace,
+			Name:      "replica_parts_to_check",
+			Help:      "The number of data parts in the queue for verification",
+		}, []string{"database", "table"}).WithLabelValues(replica.Database, replica.Table)
+		checkParts.Set(float64(replica.PartsToCheck))
+		checkParts.Collect(ch)
+
+		insertQueue := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: metricsNamespace,
+			Name:      "replica_inserts_in_queue",
+			Help:      "Number of inserts of blocks of data that need to be made",
+		}, []string{"database", "table"}).WithLabelValues(replica.Database, replica.Table)
+		insertQueue.Set(float64(replica.InsertsInQueue))
+		insertQueue.Collect(ch)
+
+		mergesQueue := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: metricsNamespace,
+			Name:      "replica_merges_in_queue",
+			Help:      "The number of merges waiting to be made",
+		}, []string{"database", "table"}).WithLabelValues(replica.Database, replica.Table)
+		mergesQueue.Set(float64(replica.MergesInQueue))
+		mergesQueue.Collect(ch)
+
+		totalReplicas := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: metricsNamespace,
+			Name:      "replicas_total",
+			Help:      "The total number of known replicas of this table",
+		}, []string{"database", "table"}).WithLabelValues(replica.Database, replica.Table)
+		totalReplicas.Set(float64(replica.TotalReplicas))
+		totalReplicas.Collect(ch)
+
+		activeReplicas := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: metricsNamespace,
+			Name:      "active_replicas_total",
+			Help:      "The number of replicas of this table that have a session in ZooKeeper",
+		}, []string{"database", "table"}).WithLabelValues(replica.Database, replica.Table)
+		activeReplicas.Set(float64(replica.ActiveReplicas))
+		activeReplicas.Collect(ch)
+
+	}
 	return nil
 }
 
